@@ -1,0 +1,121 @@
+// Depth
+ 
+vertex_program basicDepthVP cg
+{
+    source BasicRTTShaders.cg
+    entry_point basicDepthWrite_vp
+    profiles vs_2_0 arbvp1
+ 
+    default_params
+    {
+		param_named_auto wvp worldviewproj_matrix
+		param_named maxDepth float 1000.0
+    }
+}
+ 
+fragment_program basicDepthFP cg
+{
+    source BasicRTTShaders.cg
+    entry_point basicDepthWrite_fp
+    profiles ps_2_0 arbfp1
+ 
+    default_params
+    {
+    }
+}
+ 
+material BasicDepthWrite
+{
+    technique
+    {
+        pass
+        {
+            vertex_program_ref basicDepthVP
+            {
+            }
+ 
+            fragment_program_ref basicDepthFP
+            {
+            }
+        }
+    }
+}
+ 
+// Normals
+ 
+vertex_program worldNormalsVP cg
+{
+    source BasicRTTShaders.cg
+    entry_point worldNormalWrite_vp
+    profiles vs_2_0 arbvp1
+    default_params
+    {
+        param_named_auto wvp worldviewproj_matrix
+    }
+}
+ 
+fragment_program worldNormalsFP cg
+{
+    source BasicRTTShaders.cg
+    entry_point worldNormalWrite_fp
+    profiles ps_2_0 arbfp1
+    default_params
+    {
+    }
+}
+ 
+material BasicWorldNormalWrite
+{
+    technique
+    {
+        pass
+        {
+            vertex_program_ref worldNormalsVP
+            {
+            }
+ 
+            fragment_program_ref worldNormalsFP
+            {
+            }
+        }
+    }
+}
+
+vertex_program normalDepthWriteVP cg
+{
+	source BasicRTTShaders.cg
+	entry_point normalDepthWrite_vp
+	profiles vs_2_0 arbvp1
+	default_params
+	{
+		param_named_auto wvp worldviewproj_matrix
+		param_named_auto depth_range scene_depth_range
+	}
+}
+
+fragment_program normalDepthWriteFP cg
+{
+	source BasicRTTShaders.cg
+	entry_point normalDepthWrite_fp
+	profiles ps_2_0 arbfp1
+	default_params
+	{
+	}
+}
+
+material NormalDepthCombinedWrite
+{
+    technique
+    {
+        pass
+        {
+            vertex_program_ref normalDepthWriteVP
+            {
+            }
+ 
+            fragment_program_ref normalDepthWriteFP
+            {
+            }
+        }
+    }
+}

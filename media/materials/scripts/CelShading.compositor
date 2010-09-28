@@ -1,0 +1,33 @@
+compositor CelShadingCombined
+{
+	technique
+	{
+		texture scene target_width target_height PF_A8R8G8B8
+		texture depthNorm target_width target_height PF_FLOAT32_RGBA
+		texture edges target_width target_height PF_A8R8G8B8
+		
+		target scene
+		{
+			input previous
+		}
+		
+		target depthNorm
+		{
+			material_scheme CombinedPass
+			
+			pass clear { }
+			pass render_scene { }
+		}
+		
+		target_output
+		{
+			pass render_quad
+			{
+				material SobelCombined
+				
+				input 0 depthNorm
+				input 1 scene
+			}
+		}
+	}
+}

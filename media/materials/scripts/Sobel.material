@@ -1,0 +1,75 @@
+fragment_program SobelCombinedFP cg
+{
+	source Sobel.cg
+	entry_point sobel_fp
+	profiles ps_2_0 arbfp1
+}
+
+material SobelCombined
+{
+	technique
+	{
+		pass
+		{
+			vertex_program_ref Ogre/Compositor/StdQuad_Tex2a_vp
+			{
+			}
+			
+			fragment_program_ref SobelCombinedFP
+			{
+				param_named_auto tex_size packed_texture_size 0
+				param_named threshold float 10.0
+			}
+			
+			texture_unit tex
+			{
+				tex_coord_set 0
+				tex_address_mode clamp
+			}
+			
+			texture_unit scene
+			{
+				tex_coord_set 0
+				tex_address_mode clamp
+			}
+		}
+	}
+}
+
+fragment_program MinimizeEdgesFP cg
+{
+	source Sobel.cg
+	entry_point minimizeEdges_fp
+	profiles ps_2_0 arbfp1
+}
+
+material MinimizeEdges
+{
+	technique
+	{
+		pass
+		{
+			vertex_program_ref Ogre/Compositor/StdQuad_Tex2a_vp
+			{
+			}
+			
+			fragment_program_ref MinimizeEdgesFP
+			{
+				param_named_auto tex_size packed_texture_size 0
+				param_named threshold float 0.2
+			}
+			
+			texture_unit edges
+			{
+				tex_coord_set 0
+				tex_address_mode clamp
+			}
+			
+			texture_unit scene
+			{
+				tex_coord_set 0
+				tex_address_mode clamp
+			}
+		}
+	}
+}

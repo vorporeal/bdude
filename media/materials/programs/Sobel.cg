@@ -1,0 +1,97 @@
+float2 sobel_depthNorm(sampler2D tex, float2 texcoord, float4 tex_size)
+{
+	float4 x_result = 0.0f;
+	float4 y_result = 0.0f;
+	
+	// Get the inverse dimensions of the texture (for calculating tex coords for adjacent pixels).
+	float2 tex_dim = tex_size.zw;
+	
+	// Start by doing the calculations that are the same for both operators.
+	y_result += -6 * tex2D(tex, texcoord + float2(-tex_dim.x, -tex_dim.y));
+	y_result += 6 * tex2D(tex, texcoord + float2(tex_dim.x, tex_dim.y));
+	// Copy the "shared values" into the sum for the y-gradient.
+	x_result = y_result;
+	
+	// Calculate values for top left and bottom right corners.  The absolute values of these
+	// values are the same for both kernels.
+	float4 corners = -6 * tex2D(tex, texcoord + float2(tex_dim.x, -tex_dim.y));
+	corners += 6 * tex2D(tex, texcoord + float2(-tex_dim.x, tex_dim.y));
+	
+	y_result += corners;
+	y_result += -10 * tex2D(tex, texcoord + float2(0.0, -tex_dim.y));
+	y_result += 10 * tex2D(tex, texcoord + float2(0.0, tex_dim.y));
+	
+	x_result += -corners;
+	x_result += -10 * tex2D(tex, texcoord + float2(-tex_dim.x, 0.0));
+	x_result += 10 * tex2D(tex, texcoord + float2(tex_dim.x, 0.0));
+	
+	float norm_angle = degrees(atan2(dot(y_result.xyz, float3(1.0f)), dot(x_result.xyz, float3(1.0f))));
+	norm_angle = 45.0f * round(norm_angle / 45.0f);
+	
+	if(norm_angle < 0.0f)
+		norm_angle += 180.0f;
+	
+	float depth_angle = degrees(abs(atan2(y_result.w, x_result.w)));
+	depth_angle = 45.0f * round(depth_angle / 45.0f);
+
+	float intensity = dot(sqrt(x_result * x_result + y_result * y_result), float4(1.0));
+	
+	return float2(depth_angle, intensity);
+}
+
+float4 sobel_fp(
+	uniform sampler2D tex: register(s0),
+	uniform sampler2D scene: register(s1),
+	uniform float4 tex_size,
+	uniform float threshold,
+	in float2 texcoord : TEXCOORD0) : COLOR
+{
+	float2 output = sobel_depthNorm(tex, texcoord, tex_size);
+	float grey_value = output.y;
+	float angle = fmod(output.x + 90.0f, 180.0f);
+	
+	float final_value = 1.0 - step(threshold, grey_value);
+	//float final_value = step(threshold, grey_value);
+	
+	/*if(angle == 0.0f)
+		return float4(1.0f, 1.0f, 0.0f, 1.0f) * final_value;
+	if(angle == 45.0f)
+		return float4(0.0f, 1.0f, 0.0f, 1.0f) * final_value;
+	if(angle == 90.0f)
+		return float4(0.0f, 0.0f, 1.0f, 1.0f) * final_value;
+	if(angle == 135.0f)
+		return float4(1.0f, 0.0f, 0.0f, 1.0f) * final_value;*/
+	
+	return tex2D(scene, texcoord) * final_value;
+	//return float4(float3(final_value), 1.0);
+}
+
+float4 minimizeEdges_fp(
+	uniform sampler2D edges: register(s0),
+	uniform sampler2D scene: register(s1),
+	uniform float4 tex_size,
+	uniform float threshold,
+	in float2 texcoord: TEXCOORD0) : COLOR
+{
+	float4 output;
+	
+	float2 tex_dim = tex_size.zw;
+	
+	output -= tex2D(edges, texcoord + float2(-tex_dim.x, -tex_dim.y));
+	output -= 2 * tex2D(edges, texcoord + float2(0.0f, -tex_dim.y));
+	output -= tex2D(edges, texcoord + float2(tex_dim.x, -tex_dim.y));
+	
+	output -= 2 * tex2D(edges, texcoord + float2(-tex_dim.x, 0.0f));
+	output += 16 * tex2D(edges, texcoord);
+	output -= 2 * tex2D(edges, texcoord + float2(tex_dim.x, 0.0f));
+	
+	output -= tex2D(edges, texcoord + float2(-tex_dim.x, tex_dim.y));
+	output -= 2 * tex2D(edges, texcoord + float2(0.0f, tex_dim.y));
+	output -= tex2D(edges, texcoord + float2(tex_dim.x, tex_dim.y));
+	
+	output /= 16.0f;
+	output = 1.0 - step(output, threshold);
+	
+	//return float4(output.rgb, 1.0f);
+	return float4(saturate(output * tex2D(scene, texcoord)).rgb, 1.0);
+}

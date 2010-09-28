@@ -1,0 +1,49 @@
+material Color/White
+{
+	technique
+	{
+		pass
+		{
+			ambient 1.0 1.0 1.0
+			diffuse 1.0 1.0 1.0
+		}
+	}
+}
+
+material Color/LightGrey
+{
+	technique
+	{
+		pass
+		{
+			ambient 0.8 0.8 0.8
+			diffuse 0.8 0.8 0.8
+		}
+	}
+}
+
+material Color/DarkGrey
+{
+	technique
+	{
+		pass
+		{
+			ambient 0.3 0.3 0.3
+			diffuse 0.3 0.3 0.3
+		}
+	}
+}
+
+material Color/WhiteWireframe
+{
+	technique
+	{
+		pass
+		{
+			polygon_mode wireframe
+		
+			ambient 1.0 1.0 1.0
+			diffuse 1.0 1.0 1.0
+		}
+	}
+}

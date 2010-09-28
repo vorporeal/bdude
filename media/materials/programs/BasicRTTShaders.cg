@@ -1,0 +1,70 @@
+// Write Depth to texture
+ 
+void basicDepthWrite_vp (
+    float4 pos: POSITION,
+ 
+    out float4 oPos: POSITION,
+    out float depth: TEXCOORD0,
+ 
+    uniform float4x4 wvp,
+    uniform float maxDepth)
+    {
+        oPos = mul(wvp, pos);
+        depth = (maxDepth - oPos.z) / maxDepth;
+    }
+ 
+float4 basicDepthWrite_fp (
+    float depth: TEXCOORD0
+    ) : COLOR
+    {
+        return float4( depth, depth, depth, 1.0 );
+    }
+ 
+ 
+// Write World Normal to texture
+ 
+void worldNormalWrite_vp (
+    float4 pos:POSITION,
+    float3 n: NORMAL,
+ 
+    out float4 oPos: POSITION,
+    out float3 oNorm: TEXCOORD0,
+ 
+    uniform float4x4 wvp)
+    {
+        oPos = mul(wvp, pos);
+        oNorm = n;
+    }
+ 
+float4 worldNormalWrite_fp (
+    float3 norm: TEXCOORD0) : COLOR
+    {
+        return float4 (norm.xyz / 2.0 + float3(0.5), 1);
+    }
+
+
+// Write Normals and Depth to texture (Nx, Ny, Nz, D).
+
+void normalDepthWrite_vp (
+	float4 pos : POSITION,
+	float3 n : NORMAL,
+	
+	out float4 oPos : POSITION,
+	out float3 oNorm : TEXCOORD0,
+	out float depth : TEXCOORD1,
+	
+	uniform float4x4 wvp,
+	uniform float4 depth_range)
+{
+	oPos = mul(wvp, pos);
+	oNorm = n;
+	// depth_range ==> float4(minDepth, maxDepth, depthRange, 1 / depthRange).
+	depth = (depth_range.y - oPos.z) / depth_range.z;
+}
+
+float4 normalDepthWrite_fp (
+	float3 norm : TEXCOORD0,
+	float depth : TEXCOORD1) : COLOR
+{
+	return float4(norm.xyz / 2.0 + float3(0.5), depth);
+}
