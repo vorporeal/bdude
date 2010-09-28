@@ -4,7 +4,7 @@
 #include <Ogre.h>
 
 Player::Player(Map *curMap)
-: m_sceneNode(NULL), m_map(curMap), m_alive(false)
+: m_sceneNode(NULL), m_map(curMap), m_alive(false), m_moving(false), m_animAmount(0), m_movementSpline(NULL)
 {
 	// TODO: Create the player's scene node in a better way than adding and removing it.
 	// Create a new node for the player, but remove it from the map, as it shouldn't exist until we spawn it.
@@ -30,6 +30,9 @@ Player::~Player(void)
 	else
 		delete m_sceneNode;
 	m_sceneNode = NULL;
+
+	delete m_movementSpline;
+	m_movementSpline = NULL;
 }
 
 /**
@@ -47,6 +50,8 @@ void Player::spawnPlayer(Ogre::Vector3 mapPos, Ogre::Vector3 worldPos)
 	m_sceneManager->getSceneNode("MapNode")->addChild(m_sceneNode);
 
 	m_alive = true;
+	m_moving = false;
+	m_animAmount = 0;
 }
 
 /**
@@ -58,6 +63,9 @@ void Player::die(void)
 {
 	m_sceneManager->getSceneNode("MapNode")->removeChild(m_sceneNode->getName());
 	m_alive = false;
+
+	delete m_movementSpline;
+	m_movementSpline = NULL;
 }
 
 /**
@@ -66,6 +74,10 @@ void Player::die(void)
  */
 void Player::move(Direction dir)
 {
+	// If the player is already moving or is dead, don't try to move.
+	if(!m_alive || m_moving)
+		return;
+
 	Ogre::Vector3 translateDir = Ogre::Vector3::ZERO;
 
 	switch(dir)
@@ -83,14 +95,19 @@ void Player::move(Direction dir)
 		translateDir = Ogre::Vector3(-1, 0, 0);
 		break;
 	}
+
+	// Set up a spline for smooth movement.
+	m_movementSpline = new Ogre::SimpleSpline();
+	m_movementSpline->addPoint(m_mapPosition * 100);
 	
 	// Adjust the stored map position to match the new position of the player.
 	m_mapPosition += translateDir;
-	// Actually move the player in the direction specified.  We multiply by 100 because each cube is
-	// 100x100x100 units, so moving by 100 in an axis-aligned direction keeps the player on the grid.
-	m_sceneNode->translate(translateDir * 100);
-	// This might be slow and/or unnecessary.  Should be revisited later.
-	m_worldPosition = m_sceneNode->_getDerivedPosition();
+
+	// Add a new point onto the spline as an endpoint for the player.
+	m_movementSpline->addPoint(m_mapPosition * 100);
+
+	// Set the fact that we're moving.
+	m_moving = true;
 }
 
 Ogre::Vector3 Player::getMapPosition() const
@@ -101,4 +118,33 @@ Ogre::Vector3 Player::getMapPosition() const
 Ogre::Vector3 Player::getWorldPosition() const
 {
 	return m_worldPosition;
+}
+
+void Player::update()
+{
+	// If we're not moving, there's no point in doing any of the movement stuff below.
+	if(!m_moving)
+		return;
+
+	// Start by updating the distance we've moved along the spline.
+	m_animAmount++;
+
+	// Set the new position of the node.
+	Ogre::Vector3 vec = m_movementSpline->interpolate(Ogre::Real((float) m_animAmount / (float) m_maxAnimTime));
+	m_sceneNode->setPosition(vec.x, vec.y, vec.z);
+
+	// This might be slow and/or unnecessary.  Should be revisited later.
+	m_worldPosition = m_sceneNode->_getDerivedPosition();
+
+	// If we're done moving, set values accordingly.
+	if(m_animAmount == m_maxAnimTime)
+	{
+		// We're no longer moving.
+		m_moving = 0;
+		// Therefore, get rid of the movement spline.
+		delete m_movementSpline;
+		m_movementSpline = NULL;
+		// Also, reset the amount we've moved along the spline.
+		m_animAmount = 0;
+	}
 }

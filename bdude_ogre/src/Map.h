@@ -21,6 +21,8 @@ public:
 	bool validMove(const Player &player , Direction dir) const;
 	void movePlayerHACK(Direction dir);
 
+	void update(void);
+
 private:
 	typedef boost::multi_array<MapObject*, 3> ObjectArray;
 	ObjectArray m_objects;

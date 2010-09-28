@@ -140,6 +140,15 @@ bool Map::validMove(const Player &player, Direction dir) const
 }
 
 /**
+ * This function does any tick-sensitive updating for all objects owned/controlled by the map.
+ */
+void Map::update()
+{
+	// Right now, we just want to have the player update its position.
+	m_player->update();
+}
+
+/**
  * This function is a small hack to avoid having to deal with multiple players (yet).  It does
  * what a non-hack version of this function would (check if the move is valid, and if so, move
  * the player), but it automatically calls it on the one player it currently knows about it.

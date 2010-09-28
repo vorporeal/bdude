@@ -24,6 +24,9 @@ public:
 	// Actually, this isn't so bad.  Maybe doing things this way works.
 	void move(Direction dir);
 
+	// This updates animation states and any other time-sensitive information.
+	void update(void);
+
 	const Ogre::SceneNode& getSceneNode() const;
 
 protected:
@@ -39,5 +42,8 @@ private:
 	Ogre::Vector3 m_mapPosition;
 	Ogre::Vector3 m_worldPosition;
 
-	bool m_alive;
+	bool m_alive, m_moving;
+	int m_animAmount;
+	Ogre::SimpleSpline *m_movementSpline;
+	static const int m_maxAnimTime = 30;
 };

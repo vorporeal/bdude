@@ -34,6 +34,7 @@ protected:
 	virtual void createCamera(void);
 	virtual void createViewports(void);
 	virtual bool keyPressed( const OIS::KeyEvent &arg );
+	virtual bool frameRenderingQueued(const Ogre::FrameEvent& evt);
 
 private:
 	Ogre::Viewport *m_viewport;
