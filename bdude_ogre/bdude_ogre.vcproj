@@ -186,6 +186,18 @@
 			</File>
 		</Filter>
 		<Filter
+			Name="Objects"
+			>
+			<File
+				RelativePath=".\src\Bomb.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\src\Bomb.h"
+				>
+			</File>
+		</Filter>
+		<Filter
 			Name="Map and Terrain"
 			>
 			<File

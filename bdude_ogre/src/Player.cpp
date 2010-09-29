@@ -1,14 +1,16 @@
 #include "Enums.h"
 #include "Player.h"
 #include "IDestructible.h"
+#include "Bomb.h"
 
 #include <Ogre.h>
 
 // Because it is a static variable, it has to be initialized here, outside of the constructor or any function.
 const float Player::m_maxAnimTime = 0.5f;
 
-Player::Player(Map *curMap)
-: m_sceneNode(NULL), m_map(curMap), m_alive(false), m_moving(false), m_animAmount(0), m_movementSpline(NULL)
+Player::Player(Map *curMap, int ID)
+: m_sceneNode(NULL), m_map(curMap), m_alive(false), m_moving(false), m_animAmount(0), m_movementSpline(NULL),
+m_playerID(ID)
 {
 	// TODO: Create the player's scene node in a better way than adding and removing it.
 	// Create a new node for the player, but remove it from the map, as it shouldn't exist until we spawn it.
@@ -159,4 +161,14 @@ Ogre::Vector3 Player::update(const Ogre::FrameEvent& evt)
 		// If we are moving, return the position of destination square.  Otherwise, return the current, static position.
 		return (m_moving ? m_movementSpline->getPoint(1) / 100.0f : m_mapPosition);
 	}
+}
+
+void Player::dropBomb()
+{
+	m_map->addDynamicObject(new Bomb(m_map, m_mapPosition));
+}
+
+int Player::getID(void) const
+{
+	return m_playerID;
 }

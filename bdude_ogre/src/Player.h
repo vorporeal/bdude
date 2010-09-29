@@ -10,10 +10,10 @@
 class Player : public DynamicObject, public IDestructible
 {
 public:
-	Player(Map *curMap);
+	Player(Map *curMap, int ID);
 	virtual ~Player(void);
 
-	Ogre::Vector3 getMapPosition(void) const;
+	virtual Ogre::Vector3 getMapPosition(void) const;
 	Ogre::Vector3 getWorldPosition(void) const;
 
 	// TODO: Figure out how a player should be spawned.
@@ -29,7 +29,13 @@ public:
 	// This updates animation states and any other time-sensitive information.
 	virtual Ogre::Vector3 update(const Ogre::FrameEvent& evt);
 
+	// When called, the player places a bomb on the map at his/her current location.
+	void dropBomb(void);
+
 	const Ogre::SceneNode& getSceneNode() const;
+
+	// Get the player's ID.
+	int getID(void) const;
 
 protected:
 	void setMapPosition(Ogre::Vector3 mapPos, bool updateWorld);
@@ -44,6 +50,7 @@ private:
 	Ogre::Vector3 m_mapPosition;
 	Ogre::Vector3 m_worldPosition;
 
+	int m_playerID;
 	bool m_alive, m_moving;
 	float m_animAmount;
 	Ogre::SimpleSpline *m_movementSpline;

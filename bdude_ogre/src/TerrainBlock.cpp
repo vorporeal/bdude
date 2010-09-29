@@ -6,24 +6,20 @@
 
 #include <Ogre.h>
 
-#include <iostream>
-#include <fstream>
-
 // As the scene manager is a static variable, it needs to be initialized in the .cpp file outside of
 // any constructors or methods.
 Ogre::SceneManager* TerrainBlock::m_sceneMgr = NULL;
 
 TerrainBlock::TerrainBlock(Ogre::Vector3 position):
-	m_gridx((int)position.x), m_gridy((int)position.y), m_gridz((int)position.z),
-	m_blockType(BlockType::Flat), m_terrainType(BlockTerrain::Normal)
+	m_mapPosition(position), m_blockType(BlockType::Flat), m_terrainType(BlockTerrain::Normal)
 {
 		createSceneNode();
 		loadContent();
 }
 
 TerrainBlock::TerrainBlock(MapIO::BlockData &data):
-	m_gridx(data.gridX), m_gridy(data.gridY), m_gridz(data.gridZ),
-	m_blockType(data.blockType), m_terrainType(data.blockTerrain)
+m_mapPosition(Ogre::Vector3(Ogre::Real(data.gridX), Ogre::Real(data.gridY), Ogre::Real(data.gridZ))),
+m_blockType(data.blockType), m_terrainType(data.blockTerrain)
 {
 	createSceneNode();
 	loadContent();
@@ -47,8 +43,7 @@ void TerrainBlock::createSceneNode()
 		m_sceneMgr = Ogre::Root::getSingletonPtr()->getSceneManager("MapSceneManager");
 
 	// Create the scene node for the TerrainBlock, using MapNode as the parent.
-	m_sceneNode = m_sceneMgr->getSceneNode("MapNode")->createChildSceneNode(Ogre::Vector3(100) *
-		Ogre::Vector3(Ogre::Real(m_gridx), Ogre::Real(m_gridy), Ogre::Real(m_gridz)));
+	m_sceneNode = m_sceneMgr->getSceneNode("MapNode")->createChildSceneNode(Ogre::Vector3(100) * m_mapPosition);
 }
 
 void TerrainBlock::loadContent()
@@ -81,4 +76,9 @@ void TerrainBlock::loadContent()
 
 	// Attach the block to the scene node.
 	m_sceneNode->attachObject(m_entity);
+}
+
+Ogre::Vector3 TerrainBlock::getMapPosition() const
+{
+	return m_mapPosition;
 }

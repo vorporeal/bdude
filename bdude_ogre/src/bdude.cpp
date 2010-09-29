@@ -118,6 +118,10 @@ bool bdude::keyPressed( const OIS::KeyEvent &arg )
 	{
 		m_map->movePlayerHACK(Direction::East);
 	}
+	else if (arg.key == OIS::KC_SPACE)
+	{
+		m_map->dropBombHACK();
+	}
 
 	return true;
 }

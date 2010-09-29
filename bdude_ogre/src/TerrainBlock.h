@@ -12,6 +12,8 @@ public:
 	TerrainBlock(MapIO::BlockData &data);
 	virtual ~TerrainBlock(void);
 
+	virtual Ogre::Vector3 getMapPosition() const;
+
 private:
 	void createSceneNode(void);
 	void loadContent(void);
@@ -21,7 +23,7 @@ private:
 	Ogre::SceneNode *m_sceneNode;
 	Ogre::Entity *m_entity;
 
-	int m_gridx, m_gridy, m_gridz;
+	Ogre::Vector3 m_mapPosition;
 	BlockType m_blockType;
 	BlockTerrain m_terrainType;
 };

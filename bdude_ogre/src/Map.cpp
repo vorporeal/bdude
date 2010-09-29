@@ -5,10 +5,13 @@
 #include "MapIO.h"
 #include "TerrainBlock.h"
 #include "Map.h"
+#include "MapObject.h"
+#include "DynamicObject.h"
 
 #include <Ogre.h>
 
 #include <list>
+#include <queue>
 
 /**
  * The objects array is stored as m_objects[y][x][z].  This is because lookups will frequently be within the same
@@ -17,7 +20,7 @@
  * fixes the order and indexes into the object array.  This macro should be used whenever accessing the array to ensure
  * that elements are accessed in the correct order.
  */
-#define OBJECTS(x, y, z) m_objects[(y)][(x)][(z)]
+#define OBJECTS(x, y, z) m_objects[(int) (y)][(int) (x)][(int) (z)]
 
 Map::Map(MapIO::MapData *data):
 	m_mapTerrain(data->mapTerrain), m_sizeX((int)data->sizeX), m_sizeY((int)data->sizeY), m_sizeZ((int)data->sizeZ),
@@ -76,9 +79,10 @@ Map::Map(MapIO::MapData *data):
 	directionalLight->setSpecularColour(Ogre::ColourValue(0.25f, 0.25f, 0.25f));
 
 	// Let's try creating a player!
-	m_player = new Player(this);
+	m_player = new Player(this, 0);
 	Ogre::Vector3 playerMapPos(0, 1, 4);
 	m_player->spawnPlayer(playerMapPos, playerMapPos * 100 + m_sceneNode->_getDerivedPosition());
+	this->addPlayer(m_player);
 
 	// Let's load fun things!  Yay Jak's models!
 	Ogre::SceneNode *dogNode = m_sceneNode->createChildSceneNode();
@@ -95,13 +99,14 @@ Map::Map(MapIO::MapData *data):
 
 Map::~Map(void)
 {
-
+	Ogre::Root::getSingleton().destroySceneManager(m_sceneManager);
 }
 
 /**
  * This function takes in a player and a direction, and checks to see if it's "legal" for
  * the player to move in that direction.  It does this by checking to see if there is an
- * object in the objects array at the location that the player wishes to move to.  If so,
+ * object in the objects array at the location that the player wishes to move to
+ .  If so,
  * the player may not move there.  This assumes that the objects array correctly represents
  * the state of the map.  If that assumption is false, we fucked up somewhere.
  */
@@ -135,8 +140,20 @@ bool Map::validMove(const Player &player, Direction dir) const
 	if(newPlayerPos.z >= m_sizeZ || newPlayerPos.z < 0)
 		return false;
 
-	// If the spot in the array is NULL (nothing there), the player may move there.
-	return (OBJECTS((int) newPlayerPos.x, (int) newPlayerPos.y, (int) newPlayerPos.z) == NULL);
+	// Make sure there isn't an object in the way.
+	if(OBJECTS((int) newPlayerPos.x, (int) newPlayerPos.y, (int) newPlayerPos.z) != NULL)
+		return false;
+	
+	// Make sure there isn't another player in the way.
+	std::list<Player*>::const_iterator iter;
+	for(iter = m_players.begin(); iter != m_players.end(); iter++)
+		// Don't check a player against itself - it'll always be in the same position.
+		if(player.getID() != (*iter)->getID())
+			// Do the actual position check.
+			if(newPlayerPos == (*iter)->getMapPosition())
+				return false;
+
+	return true;
 }
 
 /**
@@ -144,10 +161,50 @@ bool Map::validMove(const Player &player, Direction dir) const
  */
 void Map::update(const Ogre::FrameEvent& evt)
 {
-	// TODO: Deal with the position returned by the player.
-	// Right now, we just want to have the player update its position.
-	Ogre::Vector3 curPos = m_player->getMapPosition();
-	Ogre::Vector3 newPos = m_player->update(evt);
+	// Have all players update themselves.
+	std::list<Player*>::iterator pIter;
+	for(pIter = m_players.begin(); pIter != m_players.end(); pIter++)
+		(*pIter)->update(evt);
+
+	// Keep track of everything to get rid of.
+	std::queue<DynamicObject*> removables;
+
+	// Have all other dynamic objects update themselves.
+	std::list<DynamicObject*>::iterator iter;
+	for(iter = m_dynamicObjects.begin(); iter != m_dynamicObjects.end(); iter++)
+	{
+		// Check to see if the object should be removed from the list.
+		if((*iter)->toRemove())
+		{
+			// If so, add them to a list of things to remove (so we don't run into concurrent modification issues).
+			removables.push((*iter));
+			continue;
+		}
+
+		Ogre::Vector3 oldPos = (*iter)->getMapPosition();
+		Ogre::Vector3 newPos = (*iter)->update(evt);
+		// Deal with objects that have moved.
+		if(oldPos != newPos)
+		{
+			if(OBJECTS(oldPos.x, oldPos.y, oldPos.z) == *iter)
+				OBJECTS(oldPos.x, oldPos.y, oldPos.z) = NULL;
+			OBJECTS(newPos.x, newPos.y, newPos.z) = *iter;
+		}
+	}
+
+	// Get rid of everything marked for removal or deletion.
+	while(!removables.empty())
+	{
+		DynamicObject *dobj = removables.front();
+		if(dobj->toDestroy())
+		{
+			destroyDynamicObject(dobj);
+			dobj = NULL;
+		}
+		else
+			removeDynamicObject(dobj);
+		removables.pop();
+	}
 }
 
 /**
@@ -161,4 +218,86 @@ void Map::movePlayerHACK(Direction dir)
 {
 	if(validMove(*m_player, dir))
 		m_player->move(dir);
+}
+
+void Map::dropBombHACK()
+{
+	m_player->dropBomb();
+}
+
+void Map::addPlayer(Player *player)
+{
+	m_players.push_back(player);
+}
+
+void Map::destroyPlayer(Player *player)
+{
+	m_players.remove(player);
+	delete player;
+}
+
+bool Map::addStaticObject(MapObject *obj)
+{
+	Ogre::Vector3 pos = obj->getMapPosition();
+	if(OBJECTS(pos.x, pos.y, pos.z) != NULL)
+		return false;
+	else
+	{
+		OBJECTS(pos.x, pos.y, pos.z) = obj;
+		return true;
+	}
+}
+
+bool Map::addDynamicObject(DynamicObject *obj)
+{
+	if(addStaticObject(obj))
+	{
+		m_dynamicObjects.push_back(obj);
+		obj->objectAdded();
+		return true;
+	}
+	else
+		return false;
+}
+
+bool Map::removeStaticObject(MapObject *obj)
+{
+	Ogre::Vector3 pos = obj->getMapPosition();
+	if(OBJECTS(pos.x, pos.y, pos.z) == obj)
+	{
+		OBJECTS(pos.x, pos.y, pos.z) = NULL;
+		return true;
+	}
+	else
+		return false;
+}
+
+bool Map::destroyStaticObject(MapObject *obj)
+{
+	bool ret = removeStaticObject(obj);
+	delete obj;
+	return ret;
+}
+
+bool Map::removeDynamicObject(DynamicObject *obj)
+{
+	if(removeStaticObject(obj))
+	{
+		m_dynamicObjects.remove(obj);
+		return true;
+	}
+	else
+		return false;
+}
+
+bool Map::destroyDynamicObject(DynamicObject *obj)
+{
+	bool ret = removeDynamicObject(obj);
+	delete obj;
+	return ret;
+}
+
+bool Map::isOccupied(Ogre::Vector3 pos) const
+{
+	return OBJECTS(pos.x, pos.y, pos.z) != NULL;
 }
