@@ -142,10 +142,12 @@ bool Map::validMove(const Player &player, Direction dir) const
 /**
  * This function does any tick-sensitive updating for all objects owned/controlled by the map.
  */
-void Map::update()
+void Map::update(const Ogre::FrameEvent& evt)
 {
+	// TODO: Deal with the position returned by the player.
 	// Right now, we just want to have the player update its position.
-	m_player->update();
+	Ogre::Vector3 curPos = m_player->getMapPosition();
+	Ogre::Vector3 newPos = m_player->update(evt);
 }
 
 /**

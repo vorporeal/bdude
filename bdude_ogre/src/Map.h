@@ -8,9 +8,11 @@
 #include <boost/multi_array.hpp>
 
 #include <string>
+#include <list>
 
 class Player;
 class MapObject;
+class DynamicObject;
 
 class Map
 {
@@ -21,11 +23,16 @@ public:
 	bool validMove(const Player &player , Direction dir) const;
 	void movePlayerHACK(Direction dir);
 
-	void update(void);
+	void update(const Ogre::FrameEvent& evt);
+
+	//TODO: Decide whether these should be public/protected/private.
+	void addStaticObject(MapObject* obj);
+	void addDynamicObject(DynamicObject* obj);
 
 private:
 	typedef boost::multi_array<MapObject*, 3> ObjectArray;
 	ObjectArray m_objects;
+	std::list<DynamicObject*> m_dynamicObjects;
 
 	Ogre::SceneManager *m_sceneManager;
 	Ogre::SceneNode *m_sceneNode;

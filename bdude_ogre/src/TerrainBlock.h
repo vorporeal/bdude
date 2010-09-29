@@ -12,8 +12,6 @@ public:
 	TerrainBlock(MapIO::BlockData &data);
 	virtual ~TerrainBlock(void);
 
-	virtual inline bool isDestructible(void);
-
 private:
 	void createSceneNode(void);
 	void loadContent(void);

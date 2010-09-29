@@ -135,7 +135,7 @@ bool bdude::frameRenderingQueued(const Ogre::FrameEvent& evt)
 	mMouse->capture();
 
 	// Update the map.
-	m_map->update();
+	m_map->update(evt);
 
 	mTrayMgr->frameRenderingQueued(evt);
 

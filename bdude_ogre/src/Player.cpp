@@ -1,7 +1,11 @@
 #include "Enums.h"
 #include "Player.h"
+#include "IDestructible.h"
 
 #include <Ogre.h>
+
+// Because it is a static variable, it has to be initialized here, outside of the constructor or any function.
+const float Player::m_maxAnimTime = 0.5f;
 
 Player::Player(Map *curMap)
 : m_sceneNode(NULL), m_map(curMap), m_alive(false), m_moving(false), m_animAmount(0), m_movementSpline(NULL)
@@ -59,7 +63,7 @@ void Player::spawnPlayer(Ogre::Vector3 mapPos, Ogre::Vector3 worldPos)
  * and remove the player from the map.  When states get implemented, chances are that it will basically just change the
  * state of the player to "Dying" or similar.
  */
-void Player::die(void)
+void Player::destroy(void)
 {
 	m_sceneManager->getSceneNode("MapNode")->removeChild(m_sceneNode->getName());
 	m_alive = false;
@@ -75,7 +79,7 @@ void Player::die(void)
 void Player::move(Direction dir)
 {
 	// If the player is already moving or is dead, don't try to move.
-	if(!m_alive || m_moving)
+	if(m_moving || !m_alive)
 		return;
 
 	Ogre::Vector3 translateDir = Ogre::Vector3::ZERO;
@@ -120,31 +124,39 @@ Ogre::Vector3 Player::getWorldPosition() const
 	return m_worldPosition;
 }
 
-void Player::update()
+Ogre::Vector3 Player::update(const Ogre::FrameEvent& evt)
 {
-	// If we're not moving, there's no point in doing any of the movement stuff below.
+	// If we're not moving, there's no point in doing any of the movement stuff below, so return the current position.
 	if(!m_moving)
-		return;
-
-	// Start by updating the distance we've moved along the spline.
-	m_animAmount++;
-
-	// Set the new position of the node.
-	Ogre::Vector3 vec = m_movementSpline->interpolate(Ogre::Real((float) m_animAmount / (float) m_maxAnimTime));
-	m_sceneNode->setPosition(vec.x, vec.y, vec.z);
-
-	// This might be slow and/or unnecessary.  Should be revisited later.
-	m_worldPosition = m_sceneNode->_getDerivedPosition();
-
-	// If we're done moving, set values accordingly.
-	if(m_animAmount == m_maxAnimTime)
+		return m_mapPosition;
+	else
 	{
-		// We're no longer moving.
-		m_moving = 0;
-		// Therefore, get rid of the movement spline.
-		delete m_movementSpline;
-		m_movementSpline = NULL;
-		// Also, reset the amount we've moved along the spline.
-		m_animAmount = 0;
+		// Start by updating the distance we've moved along the spline.
+		m_animAmount += evt.timeSinceLastFrame;
+
+		// Calculate the interpolation factor.  Make sure it's not greater than 1.0.
+		float amt = m_animAmount / m_maxAnimTime;
+
+		// Set the new position of the node.
+		Ogre::Vector3 vec = m_movementSpline->interpolate(Ogre::Real(amt));
+		m_sceneNode->setPosition(vec.x, vec.y, vec.z);
+
+		// This might be slow and/or unnecessary.  Should be revisited later.
+		m_worldPosition = m_sceneNode->_getDerivedPosition();
+
+		// If we're done moving, set values accordingly.
+		if(m_animAmount >= m_maxAnimTime)
+		{
+			// We're no longer moving.
+			m_moving = false;
+			// Therefore, get rid of the movement spline.
+			delete m_movementSpline;
+			m_movementSpline = NULL;
+			// Also, reset the amount we've moved along the spline.
+			m_animAmount = 0;
+		}
+
+		// If we are moving, return the position of destination square.  Otherwise, return the current, static position.
+		return (m_moving ? m_movementSpline->getPoint(1) / 100.0f : m_mapPosition);
 	}
 }

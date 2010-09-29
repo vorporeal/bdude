@@ -2,10 +2,12 @@
 
 #include "Enums.h"
 #include "Map.h"
+#include "DynamicObject.h"
+#include "IDestructible.h"
 
-#include "Ogre.h"
+#include <Ogre.h>
 
-class Player
+class Player : public DynamicObject, public IDestructible
 {
 public:
 	Player(Map *curMap);
@@ -18,14 +20,14 @@ public:
 	// What should the arguments be?
 	// What values does it need to set?
 	void spawnPlayer(Ogre::Vector3 mapPos, Ogre::Vector3 worldPos);
-	void die(void);
+	virtual void destroy();
 
 	// Move the player.  THIS IS A BIT OF A HACK, FIX IT LATER.
 	// Actually, this isn't so bad.  Maybe doing things this way works.
 	void move(Direction dir);
 
 	// This updates animation states and any other time-sensitive information.
-	void update(void);
+	virtual Ogre::Vector3 update(const Ogre::FrameEvent& evt);
 
 	const Ogre::SceneNode& getSceneNode() const;
 
@@ -43,7 +45,7 @@ private:
 	Ogre::Vector3 m_worldPosition;
 
 	bool m_alive, m_moving;
-	int m_animAmount;
+	float m_animAmount;
 	Ogre::SimpleSpline *m_movementSpline;
-	static const int m_maxAnimTime = 30;
+	static const float m_maxAnimTime;
 };

@@ -82,8 +82,3 @@ void TerrainBlock::loadContent()
 	// Attach the block to the scene node.
 	m_sceneNode->attachObject(m_entity);
 }
-
-bool TerrainBlock::isDestructible(void)
-{
-	return false;
-}
