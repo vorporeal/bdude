@@ -7,7 +7,9 @@
 #include "IDestructible.h"
 #include "Map.h"
 
-const float Bomb::m_animTime = 3.0f;
+#include <cmath>
+
+const float Bomb::m_animTime = 2.0f;
 
 Bomb::Bomb(Map *curMap, Ogre::Vector3 mapPos) :
 m_map(curMap), m_mapPosition(mapPos), m_animAmount(0.0f)
@@ -22,6 +24,10 @@ m_map(curMap), m_mapPosition(mapPos), m_animAmount(0.0f)
 	Ogre::Entity *ent = m_sceneMgr->createEntity(Ogre::SceneManager::PrefabType::PT_SPHERE);
 	entNode->attachObject(ent);
 	ent->setMaterialName("Color/Maroon");
+
+	// Set spline points for animation.
+	m_spline.addPoint(m_mapPosition * 100);
+	m_spline.addPoint(m_mapPosition * 100 + Ogre::Vector3(0.0f, 50.0f - std::fmod(m_mapPosition.y, 50.0f), 0.0f));
 }
 
 Bomb::~Bomb(void)
@@ -32,6 +38,9 @@ Bomb::~Bomb(void)
 Ogre::Vector3 Bomb::update(const Ogre::FrameEvent& evt)
 {
 	m_animAmount += evt.timeSinceLastFrame;
+
+	Ogre::Vector3 vec = m_spline.interpolate(m_animAmount / m_animTime);
+	m_sceneNode->setPosition(vec.x, vec.y, vec.z);
 
 	if(m_animAmount >= m_animTime)
 		this->destroy();

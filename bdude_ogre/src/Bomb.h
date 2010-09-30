@@ -26,6 +26,7 @@ private:
 
 	float m_animAmount;
 	static const float m_animTime;
+	Ogre::SimpleSpline m_spline;
 
 	Ogre::Vector3 m_mapPosition;
 };

@@ -6,7 +6,7 @@
 #include <Ogre.h>
 
 // Because it is a static variable, it has to be initialized here, outside of the constructor or any function.
-const float Player::m_maxAnimTime = 0.5f;
+const float Player::m_maxAnimTime = 0.4f;
 
 Player::Player(Map *curMap, int ID)
 : m_sceneNode(NULL), m_map(curMap), m_alive(false), m_moving(false), m_animAmount(0), m_movementSpline(NULL),
