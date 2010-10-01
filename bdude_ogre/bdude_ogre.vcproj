@@ -270,7 +270,7 @@
 			>
 		</File>
 		<File
-			RelativePath=".\Enums.h"
+			RelativePath=".\src\Enums.h"
 			>
 		</File>
 		<File

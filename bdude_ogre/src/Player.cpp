@@ -165,7 +165,9 @@ Ogre::Vector3 Player::update(const Ogre::FrameEvent& evt)
 
 void Player::dropBomb()
 {
-	m_map->addDynamicObject(new Bomb(m_map, m_mapPosition));
+	if(!m_moving && m_alive)
+		//m_map->addDynamicObject(new Bomb(m_map, m_mapPosition));
+		m_map->addObject(new Bomb(m_map, m_mapPosition));
 }
 
 int Player::getID(void) const

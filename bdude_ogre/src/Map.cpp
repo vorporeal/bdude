@@ -161,26 +161,22 @@ bool Map::validMove(const Player &player, Direction dir) const
  */
 void Map::update(const Ogre::FrameEvent& evt)
 {
-	// Have all players update themselves.
+	// Have all players update themselves.  (Perhaps this should go after objects updating themselves?  Probably...)
 	std::list<Player*>::iterator pIter;
 	for(pIter = m_players.begin(); pIter != m_players.end(); pIter++)
 		(*pIter)->update(evt);
 
-	// Keep track of everything to get rid of.
-	std::queue<DynamicObject*> removables;
+	// Remove all old objects from the update list.
+	while(!m_removables.empty())
+	{
+		m_dynamicObjects.remove(m_removables.front());
+		m_removables.pop();
+	}
 
 	// Have all other dynamic objects update themselves.
 	std::list<DynamicObject*>::iterator iter;
 	for(iter = m_dynamicObjects.begin(); iter != m_dynamicObjects.end(); iter++)
 	{
-		// Check to see if the object should be removed from the list.
-		if((*iter)->toRemove())
-		{
-			// If so, add them to a list of things to remove (so we don't run into concurrent modification issues).
-			removables.push((*iter));
-			continue;
-		}
-
 		Ogre::Vector3 oldPos = (*iter)->getMapPosition();
 		Ogre::Vector3 newPos = (*iter)->update(evt);
 		// Deal with objects that have moved.
@@ -190,20 +186,6 @@ void Map::update(const Ogre::FrameEvent& evt)
 				OBJECTS(oldPos.x, oldPos.y, oldPos.z) = NULL;
 			OBJECTS(newPos.x, newPos.y, newPos.z) = *iter;
 		}
-	}
-
-	// Get rid of everything marked for removal or deletion.
-	while(!removables.empty())
-	{
-		DynamicObject *dobj = removables.front();
-		if(dobj->toDestroy())
-		{
-			destroyDynamicObject(dobj);
-			dobj = NULL;
-		}
-		else
-			removeDynamicObject(dobj);
-		removables.pop();
 	}
 }
 
@@ -222,7 +204,9 @@ void Map::movePlayerHACK(Direction dir)
 
 void Map::dropBombHACK()
 {
-	m_player->dropBomb();
+	Ogre::Vector3 vec = m_player->getMapPosition();
+	if(OBJECTS(vec.x, vec.y, vec.z) == NULL)
+		m_player->dropBomb();
 }
 
 void Map::addPlayer(Player *player)
@@ -230,13 +214,15 @@ void Map::addPlayer(Player *player)
 	m_players.push_back(player);
 }
 
-void Map::destroyPlayer(Player *player)
+void Map::removePlayer(Player *player)
 {
+	// TODO: Decide if we should enforce setting an object's state to ObjectState::ToRemove if it's being removed.
 	m_players.remove(player);
-	delete player;
+	if(player->getState() == ObjectState::ToDestroy)
+		delete player;
 }
 
-bool Map::addStaticObject(MapObject *obj)
+bool Map::addObject(MapObject *obj)
 {
 	Ogre::Vector3 pos = obj->getMapPosition();
 	if(OBJECTS(pos.x, pos.y, pos.z) != NULL)
@@ -244,60 +230,35 @@ bool Map::addStaticObject(MapObject *obj)
 	else
 	{
 		OBJECTS(pos.x, pos.y, pos.z) = obj;
+		DynamicObject *dynTemp = dynamic_cast<DynamicObject*>(obj);
+		if(dynTemp != NULL)
+		{
+			m_dynamicObjects.push_back(dynTemp);
+			obj->MapObject::setState(ObjectState::Alive);
+		}
 		return true;
 	}
 }
 
-bool Map::addDynamicObject(DynamicObject *obj)
+bool Map::removeObject(MapObject *obj)
 {
-	if(addStaticObject(obj))
-	{
-		m_dynamicObjects.push_back(obj);
-		obj->objectAdded();
-		return true;
-	}
-	else
-		return false;
-}
-
-bool Map::removeStaticObject(MapObject *obj)
-{
+	// TODO: Decide if we should enforce setting an object's state to ObjectState::ToRemove if it's being removed.
 	Ogre::Vector3 pos = obj->getMapPosition();
 	if(OBJECTS(pos.x, pos.y, pos.z) == obj)
 	{
 		OBJECTS(pos.x, pos.y, pos.z) = NULL;
+		DynamicObject *dynTemp = dynamic_cast<DynamicObject*>(obj);
+		if(dynTemp != NULL)
+			m_removables.push(dynTemp);
+		if(obj->getState() == ObjectState::ToDestroy)
+			delete obj;
 		return true;
 	}
 	else
 		return false;
 }
 
-bool Map::destroyStaticObject(MapObject *obj)
+MapObject* Map::getObject(Ogre::Vector3 pos) const
 {
-	bool ret = removeStaticObject(obj);
-	delete obj;
-	return ret;
-}
-
-bool Map::removeDynamicObject(DynamicObject *obj)
-{
-	if(removeStaticObject(obj))
-	{
-		m_dynamicObjects.remove(obj);
-		return true;
-	}
-	else
-		return false;
-}
-
-bool Map::destroyDynamicObject(DynamicObject *obj)
-{
-	bool ret = removeDynamicObject(obj);
-	delete obj;
-	return ret;
-}
-
-bool Map::isOccupied(Ogre::Vector3 pos) const
-{
-	return OBJECTS(pos.x, pos.y, pos.z) != NULL;
+	return OBJECTS(pos.x, pos.y, pos.z);
 }

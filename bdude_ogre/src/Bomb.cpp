@@ -52,7 +52,8 @@ void Bomb::destroy()
 {
 	m_sceneMgr->getSceneNode("MapNode")->removeChild(m_sceneNode);
 
-	this->DynamicObject::setDestroy();
+	this->MapObject::setState(ObjectState::ToDestroy);
+	m_map->removeObject(this);
 }
 
 Ogre::Vector3 Bomb::getMapPosition() const

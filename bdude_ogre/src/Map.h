@@ -28,24 +28,20 @@ public:
 
 	//TODO: Decide whether these should be public/protected/private.
 	void addPlayer(Player *player);
-	void destroyPlayer(Player *player);
+	void removePlayer(Player *player);
 
-	bool addStaticObject(MapObject *obj);
-	bool addDynamicObject(DynamicObject *obj);
+	bool addObject(MapObject *obj);
+	bool removeObject(MapObject *obj);
 
-	bool removeStaticObject(MapObject *obj);
-	bool destroyStaticObject(MapObject *obj);
-
-	bool removeDynamicObject(DynamicObject *obj);
-	bool destroyDynamicObject(DynamicObject *obj);
-
-	bool isOccupied(Ogre::Vector3 pos) const;
+	MapObject* getObject(Ogre::Vector3 pos) const;
 
 private:
 	typedef boost::multi_array<MapObject*, 3> ObjectArray;
 	ObjectArray m_objects;
 	std::list<DynamicObject*> m_dynamicObjects;
 	std::list<Player*> m_players;
+
+	std::queue<DynamicObject*> m_removables;
 
 	Ogre::SceneManager *m_sceneManager;
 	Ogre::SceneNode *m_sceneNode;
